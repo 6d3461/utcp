@@ -1,0 +1,17 @@
+#!/usr/bin/bash
+
+cargo b --release
+cargo_exit_code=$?
+if [[ $cargo_exit_code -ne 0 ]]; then
+  exit $cargo_exit_code
+fi
+
+sudo setcap cap_net_admin=eip target/release/utcp
+target/release/utcp &
+utcp_pid=$!
+
+sudo ip addr add 192.168.0.1/24 dev tun0
+sudo ip link set up dev tun0
+
+trap 'kill $utcp_pid' INT TERM
+wait $utcp_pid
